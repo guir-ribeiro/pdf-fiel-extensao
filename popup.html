@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>PDF Fiel</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <h1>Baixar página em PDF</h1>
+    <p class="sub">Usa o motor de impressão do Chrome: texto selecionável, sem screenshot.</p>
+  </header>
+
+  <section>
+    <label class="field">
+      <span class="label">Formato do papel</span>
+      <select id="layout">
+        <option value="width">Largura real da página (mais fiel)</option>
+        <option value="single">Página única contínua (sem cortes)</option>
+        <option value="a4">A4 (para imprimir no papel)</option>
+      </select>
+      <span class="hint" id="layoutHint"></span>
+    </label>
+
+    <label class="field" id="orientationField" hidden>
+      <span class="label">Orientação</span>
+      <select id="orientation">
+        <option value="portrait">Retrato</option>
+        <option value="landscape">Paisagem</option>
+      </select>
+    </label>
+
+    <div class="row">
+      <label class="field grow">
+        <span class="label">Margens</span>
+        <select id="margins">
+          <option value="none">Nenhuma</option>
+          <option value="small">Pequenas</option>
+          <option value="normal">Normais</option>
+        </select>
+      </label>
+      <label class="field grow">
+        <span class="label">Escala <output id="scaleOut">100%</output></span>
+        <input type="range" id="scale" min="0.5" max="1.5" step="0.05" value="1">
+      </label>
+    </div>
+
+    <label class="check">
+      <input type="checkbox" id="printBackground">
+      <span>Imprimir cores e imagens de fundo</span>
+    </label>
+
+    <label class="check">
+      <input type="checkbox" id="freezeFixed">
+      <span>Fixar barras flutuantes no topo
+        <em>evita menus repetidos em toda página</em>
+      </span>
+    </label>
+  </section>
+
+  <section class="stamp">
+    <label class="check strong">
+      <input type="checkbox" id="stamp">
+      <span>Carimbo de data, hora e URL</span>
+    </label>
+
+    <div id="stampOptions">
+      <label class="field">
+        <span class="label">Onde</span>
+        <select id="stampPosition">
+          <option value="footer">Rodapé</option>
+          <option value="header">Cabeçalho</option>
+        </select>
+      </label>
+      <div class="chips">
+        <label class="chip"><input type="checkbox" id="stampDate"><span>Data e hora</span></label>
+        <label class="chip"><input type="checkbox" id="stampUrl"><span>URL</span></label>
+        <label class="chip"><input type="checkbox" id="stampTitle"><span>Título</span></label>
+        <label class="chip"><input type="checkbox" id="stampPages"><span>Nº da página</span></label>
+      </div>
+      <p class="hint">O carimbo reserva uma faixa de ~1 cm fora da área do conteúdo.</p>
+    </div>
+  </section>
+
+  <section>
+    <label class="check">
+      <input type="checkbox" id="saveAs">
+      <span>Perguntar onde salvar</span>
+    </label>
+  </section>
+
+  <footer>
+    <button id="go" class="primary">Baixar PDF</button>
+    <p id="status" class="status"></p>
+    <p class="kbd">Atalho: <b>Cmd/Ctrl + Shift + Y</b></p>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>
