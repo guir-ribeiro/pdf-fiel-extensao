@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.2
+
+- Novo nome: **Printly — páginas inteiras em PDF**.
+- Nome atualizado no popup, no manifesto, na documentação e no repositório.
+- ZIP instalável e artefato do CI passam a usar o prefixo `printly`.
+- Preferências e atalho de captura preservados ao atualizar a instalação existente.
+
 ## 1.0.1
 
 ### Corrigido

@@ -1,12 +1,12 @@
 {
-  "name": "pdf-fiel-extensao",
-  "version": "1.0.1",
+  "name": "printly",
+  "version": "1.0.2",
   "private": true,
-  "description": "Extensão Chrome para salvar páginas em PDF preservando o layout da tela.",
+  "description": "Printly: extensão Chrome para salvar páginas inteiras em PDF preservando o layout da tela.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/guir-ribeiro/pdf-fiel-extensao.git"
+    "url": "https://github.com/guir-ribeiro/printly.git"
   },
   "engines": {
     "node": ">=22"

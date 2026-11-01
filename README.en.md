@@ -1,6 +1,6 @@
-# PDF Fiel
+# Printly
 
-**Save web pages as PDFs while preserving their on-screen layout.**
+**Full web pages in PDF, just as you see them.**
 
 An open source Google Chrome extension with selectable text, backgrounds,
 links and optional date, time and URL stamps. No account, server or runtime
@@ -16,7 +16,7 @@ Requires **Google Chrome 116+ on desktop**.
 1. Select **Code → Download ZIP** on GitHub and extract it, or clone:
 
    ```sh
-   git clone https://github.com/guir-ribeiro/pdf-fiel-extensao.git
+   git clone https://github.com/guir-ribeiro/printly.git
    ```
 
 2. Open `chrome://extensions` and enable **Developer mode**.
@@ -25,6 +25,9 @@ Requires **Google Chrome 116+ on desktop**.
 
 No Node.js, npm installation or build step is needed to use the extension.
 After updating the files, reload the extension in `chrome://extensions`.
+
+Version 1.0.2 introduces the **Printly** name. Update the files in the same
+folder and reload to retain existing preferences and the capture shortcut.
 
 Use **Ctrl + Shift + Y** (**⌘ + Shift + Y** on macOS) to capture with the last
 saved settings. Customize it at `chrome://extensions/shortcuts`. Wait for the

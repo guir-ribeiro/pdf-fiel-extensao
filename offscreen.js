@@ -11,7 +11,7 @@ function base64ToBytes(b64) {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg) return;
 
-  if (msg.type === 'pdf-fiel-blob') {
+  if (msg.type === 'printly-blob') {
     try {
       const blob = new Blob([base64ToBytes(msg.base64)], { type: 'application/pdf' });
       sendResponse({ url: URL.createObjectURL(blob) });
@@ -21,7 +21,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
-  if (msg.type === 'pdf-fiel-revoke') {
+  if (msg.type === 'printly-revoke') {
     try { URL.revokeObjectURL(msg.url); } catch (e) { /* ignora */ }
   }
 });

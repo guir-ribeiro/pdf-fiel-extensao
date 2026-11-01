@@ -1,4 +1,4 @@
-/* PDF Fiel — service worker
+/* Printly — service worker
  *
  * Estratégia de fidelidade:
  *  - usa o próprio motor de impressão do Chrome (Page.printToPDF via CDP),
@@ -23,7 +23,7 @@ let running = false;
 /* ---------------------------------------------------------------- utils */
 
 function say(text, kind) {
-  chrome.runtime.sendMessage({ type: 'pdf-fiel-status', text, kind }).catch(() => {});
+  chrome.runtime.sendMessage({ type: 'printly-status', text, kind }).catch(() => {});
 }
 
 function badge(text, color) {
@@ -84,7 +84,7 @@ function bytesToBase64(bytes) {
 
 async function getSettings() {
   const stored = await chrome.storage.sync.get('settings');
-  return PdfFielSettings.normalize(stored.settings);
+  return PrintlySettings.normalize(stored.settings);
 }
 
 /* ------------------------------------------------- preparo da página */
@@ -92,7 +92,7 @@ async function getSettings() {
 /* Roda dentro da aba (mundo isolado). Precisa ser autocontida. */
 async function preparePage(freezeFixed) {
   // Recupera uma preparação anterior interrompida, se ainda existir nesta aba.
-  if (window.__pdfFielRestore) window.__pdfFielRestore();
+  if (window.__printlyRestore) window.__printlyRestore();
   const doc = document;
   const de = doc.documentElement;
   const nap = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -117,7 +117,7 @@ async function preparePage(freezeFixed) {
   };
 
   // Registra a restauração ANTES de qualquer alteração: vale também se o preparo falhar.
-  window.__pdfFielRestore = function () {
+  window.__printlyRestore = function () {
     touched.forEach(([el, prev]) => {
       if (el === de) return;
       if (prev === null) el.removeAttribute('style');
@@ -133,7 +133,7 @@ async function preparePage(freezeFixed) {
     const rootStyle = touched.find(([el]) => el === de)[1];
     if (rootStyle === null) de.removeAttribute('style');
     else de.setAttribute('style', rootStyle);
-    delete window.__pdfFielRestore;
+    delete window.__printlyRestore;
   };
   remember(de);
   de.style.setProperty('scroll-behavior', 'auto', 'important');
@@ -241,8 +241,8 @@ async function preparePage(freezeFixed) {
 
 function restorePage() {
   try {
-    if (window.__pdfFielRestore) window.__pdfFielRestore();
-    delete window.__pdfFielRestore;
+    if (window.__printlyRestore) window.__printlyRestore();
+    delete window.__printlyRestore;
   } catch (e) { /* ignora */ }
 }
 
@@ -511,7 +511,7 @@ async function ensureOffscreen() {
 async function download(bytes, filename, saveAs) {
   await ensureOffscreen();
   const reply = await chrome.runtime.sendMessage({
-    type: 'pdf-fiel-blob',
+    type: 'printly-blob',
     base64: bytesToBase64(bytes)
   });
   if (!reply || !reply.url) {
@@ -522,7 +522,7 @@ async function download(bytes, filename, saveAs) {
     await chrome.downloads.download({ url: reply.url, filename, saveAs: !!saveAs });
   } catch (e) {
     // Inclui o cancelamento do diálogo: não deixa o PDF retido na memória.
-    await chrome.runtime.sendMessage({ type: 'pdf-fiel-revoke', url: reply.url }).catch(() => {});
+    await chrome.runtime.sendMessage({ type: 'printly-revoke', url: reply.url }).catch(() => {});
     throw e;
   }
 }
@@ -539,7 +539,7 @@ async function releaseDownload(delta) {
   if (!item || item.byExtensionId !== chrome.runtime.id
       || !item.url?.startsWith('blob:' + chrome.runtime.getURL(''))) return;
   if (await hasOffscreenDocument()) {
-    await chrome.runtime.sendMessage({ type: 'pdf-fiel-revoke', url: item.url }).catch(() => {});
+    await chrome.runtime.sendMessage({ type: 'printly-revoke', url: item.url }).catch(() => {});
   }
   if (delta.state.current === 'interrupted') {
     say('O download foi interrompido. Tente capturar a página novamente.', 'error');
@@ -572,7 +572,7 @@ async function run(tabId) {
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (!msg || msg.type !== 'pdf-fiel-capture') return;
+  if (!msg || msg.type !== 'printly-capture') return;
   (async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab) { sendResponse({ ok: false, error: 'Nenhuma aba ativa.' }); return; }

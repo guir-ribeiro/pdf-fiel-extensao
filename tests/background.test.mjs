@@ -23,7 +23,7 @@ function worker(options = {}) {
       onMessage: event('message'),
       sendMessage: async (msg) => {
         messages.push(msg);
-        if (msg.type === 'pdf-fiel-blob') return { url: blobUrl };
+        if (msg.type === 'printly-blob') return { url: blobUrl };
       }
     },
     tabs: {
@@ -89,7 +89,7 @@ function worker(options = {}) {
 
 test('valida preferências corrompidas sem aceitar chaves extras', () => {
   const { ctx } = worker();
-  const normalized = ctx.PdfFielSettings.normalize({
+  const normalized = ctx.PrintlySettings.normalize({
     layout: 'invalid', scale: 9, stamp: 'false', stampPosition: 'header', unknown: true
   });
   assert.equal(normalized.layout, 'width');
@@ -97,9 +97,9 @@ test('valida preferências corrompidas sem aceitar chaves extras', () => {
   assert.equal(normalized.stamp, true);
   assert.equal(normalized.stampPosition, 'header');
   assert.equal('unknown' in normalized, false);
-  assert.equal(ctx.PdfFielSettings.normalize({ scale: -1 }).scale, 0.5);
-  assert.equal(ctx.PdfFielSettings.normalize({ scale: NaN }).scale, 1);
-  assert.equal(ctx.PdfFielSettings.normalize(null).layout, 'width');
+  assert.equal(ctx.PrintlySettings.normalize({ scale: -1 }).scale, 0.5);
+  assert.equal(ctx.PrintlySettings.normalize({ scale: NaN }).scale, 1);
+  assert.equal(ctx.PrintlySettings.normalize(null).layout, 'width');
 });
 
 test('carimbo escapa conteúdo HTML da página e mantém o fuso horário', () => {
@@ -192,14 +192,14 @@ test('bloqueia uma segunda captura concorrente', async () => {
 test('cancelamento de Salvar como revoga o Blob', async () => {
   const { ctx, messages } = worker({ downloadError: true });
   assert.equal((await ctx.run(7)).ok, false);
-  assert.ok(messages.some((m) => m.type === 'pdf-fiel-revoke' && m.url === blobUrl));
+  assert.ok(messages.some((m) => m.type === 'printly-revoke' && m.url === blobUrl));
 });
 
 test('conclusão e interrupção revogam somente o Blob do download correspondente', async () => {
   const { ctx, messages } = worker({ offscreen: true });
   await ctx.releaseDownload({ id: 42, state: { current: 'complete' } });
   await ctx.releaseDownload({ id: 43, state: { current: 'interrupted' } });
-  assert.equal(messages.filter((m) => m.type === 'pdf-fiel-revoke').length, 2);
+  assert.equal(messages.filter((m) => m.type === 'printly-revoke').length, 2);
   assert.ok(messages.some((m) => m.kind === 'error'));
   const unrelated = worker({ offscreen: true, items: [{ byExtensionId: 'other', url: blobUrl }] });
   await unrelated.ctx.releaseDownload({ id: 44, state: { current: 'complete' } });
@@ -211,7 +211,7 @@ test('listener de download existe ao iniciar o worker e não impõe timeout de 3
   assert.equal(typeof listeners.download, 'function');
   await ctx.run(7);
   assert.equal(timers.some((timer) => timer.ms >= 30000), false);
-  assert.ok(!messages.some((m) => m.type === 'pdf-fiel-revoke'));
+  assert.ok(!messages.some((m) => m.type === 'printly-revoke'));
 });
 
 test('stream aceita dados textuais sem a flag base64 e sempre fecha o handle', async () => {

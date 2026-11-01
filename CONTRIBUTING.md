@@ -1,7 +1,7 @@
 # Como contribuir
 
 Aceitamos issues e pull requests em português ou inglês. Consulte as
-[issues existentes](https://github.com/guir-ribeiro/pdf-fiel-extensao/issues)
+[issues existentes](https://github.com/guir-ribeiro/printly/issues)
 e descreva mudanças grandes em uma issue antes de implementá-las.
 
 ## Ambiente
