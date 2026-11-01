@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
   - name: Segurança / Security
-    url: https://github.com/guir-ribeiro/pdf-fiel-extensao/blob/master/SECURITY.md
+    url: https://github.com/guir-ribeiro/printly/blob/master/SECURITY.md
     about: Consulte o canal privado antes de publicar uma vulnerabilidade.

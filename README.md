@@ -1,6 +1,6 @@
-# PDF Fiel
+# Printly
 
-**Salve páginas da web em PDF preservando o layout da tela.**
+**Páginas inteiras em PDF, como você vê.**
 
 Extensão open source para Google Chrome, com texto selecionável, cores,
 links e carimbo opcional de data, hora e URL. Sem conta, sem servidor e sem
@@ -29,14 +29,14 @@ Manifest V3 e é instalada manualmente a partir deste repositório.
    Se preferir Git:
 
    ```sh
-   git clone https://github.com/guir-ribeiro/pdf-fiel-extensao.git
+   git clone https://github.com/guir-ribeiro/printly.git
    ```
 
 2. Abra `chrome://extensions` no Chrome.
 3. Ative o **Modo do desenvolvedor**.
 4. Clique em **Carregar sem compactação** e selecione a pasta extraída que
    contém `manifest.json`.
-5. Fixe **PDF Fiel** na barra de extensões, se desejar.
+5. Fixe **Printly** na barra de extensões, se desejar.
 
 **Não é necessário instalar Node.js, executar npm ou fazer build para usar.**
 Para atualizar, substitua os arquivos ou execute `git pull`, volte a
@@ -112,7 +112,7 @@ de `chrome.debugger` e desaparece quando a conexão é encerrada.
 - **Outros navegadores:** navegadores Chromium podem funcionar, mas não há
   garantia. Não é uma extensão para Firefox, Safari ou navegadores móveis.
 
-Se o problema persistir, [abra uma issue](https://github.com/guir-ribeiro/pdf-fiel-extensao/issues/new/choose)
+Se o problema persistir, [abra uma issue](https://github.com/guir-ribeiro/printly/issues/new/choose)
 com a versão do Chrome, sistema, opções e passos para reproduzir.
 Remova informações pessoais de URLs e capturas.
 
@@ -136,9 +136,15 @@ Para gerar um ZIP instalável em macOS ou Linux, com o comando `zip` disponível
 npm run package
 ```
 
-O arquivo `pdf-fiel-<versão>.zip` inclui apenas os arquivos de execução e a
+O arquivo `printly-<versão>.zip` inclui apenas os arquivos de execução e a
 licença. Extraia-o antes de usar **Carregar sem compactação**. O CI também
 gera esse pacote como artefato; não publica releases nem envia à Web Store.
+
+### Atualização do nome
+
+A partir da versão 1.0.2, a extensão se chama **Printly**. Ao atualizar os
+arquivos na mesma pasta e recarregar a extensão, as preferências existentes
+são mantidas. O atalho de captura continua o mesmo.
 
 ### Estrutura e funcionamento
 

@@ -12,4 +12,4 @@ O mantenedor pode moderar mensagens, encerrar discussões ou restringir
 participações em caso de violação, considerando gravidade e contexto.
 Relatos privados podem ser enviados para
 [guiribeiro118@gmail.com](mailto:guiribeiro118@gmail.com), com o assunto
-`[PDF Fiel] Conduta`. Inclua apenas os dados necessários para analisar o caso.
+`[Printly] Conduta`. Inclua apenas os dados necessários para analisar o caso.

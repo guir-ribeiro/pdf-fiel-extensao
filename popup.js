@@ -43,7 +43,7 @@ async function save() {
 }
 
 chrome.runtime.onMessage.addListener((msg) => {
-  if (msg && msg.type === 'pdf-fiel-status') setStatus(msg.text, msg.kind);
+  if (msg && msg.type === 'printly-status') setStatus(msg.text, msg.kind);
 });
 
 document.addEventListener('change', () => {
@@ -56,7 +56,7 @@ el('go').addEventListener('click', async () => {
   setStatus('Preparando...');
   try {
     await save();
-    const res = await chrome.runtime.sendMessage({ type: 'pdf-fiel-capture' });
+    const res = await chrome.runtime.sendMessage({ type: 'printly-capture' });
     if (!res) throw new Error('O serviço de captura não respondeu. Recarregue a extensão e tente novamente.');
     if (!res.ok) setStatus('Erro: ' + res.error, 'error');
   } catch (e) {
@@ -69,7 +69,7 @@ el('go').addEventListener('click', async () => {
 (async () => {
   try {
     const stored = await chrome.storage.sync.get('settings');
-    applyForm(PdfFielSettings.normalize(stored.settings));
+    applyForm(PrintlySettings.normalize(stored.settings));
     el('go').disabled = false;
   } catch (error) {
     setStatus('Não foi possível carregar as opções: ' + error.message, 'error');

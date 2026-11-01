@@ -1,5 +1,5 @@
 /* Preferências compartilhadas pelo popup e pelo service worker. */
-globalThis.PdfFielSettings = (() => {
+globalThis.PrintlySettings = (() => {
   const defaults = Object.freeze({
     layout: 'width',
     orientation: 'portrait',
