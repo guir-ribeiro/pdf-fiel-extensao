@@ -90,11 +90,12 @@
   </section>
 
   <footer>
-    <button id="go" class="primary">Baixar PDF</button>
-    <p id="status" class="status"></p>
+    <button id="go" class="primary" disabled>Baixar PDF</button>
+    <p id="status" class="status" role="status" aria-live="polite" aria-atomic="true"></p>
     <p class="kbd">Atalho: <b>Cmd/Ctrl + Shift + Y</b></p>
   </footer>
 
+  <script src="settings.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

@@ -1,0 +1,28 @@
+name: Relatar um problema / Bug report
+description: Informe uma falha reproduzível sem dados pessoais.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema e resultado esperado / Problem and expected result
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passos para reproduzir / Steps to reproduce
+      description: Inclua opções e uma URL pública. Remova tokens e dados privados.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Ambiente / Environment
+      placeholder: "PDF Fiel 1.0.1; Chrome 142; Windows 11"
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Capturas ou detalhes adicionais / Additional details
+      description: Use apenas material sem dados privados. Vulnerabilidades devem seguir SECURITY.md.

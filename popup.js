@@ -1,21 +1,5 @@
-const DEFAULTS = {
-  layout: 'width',
-  orientation: 'portrait',
-  scale: 1,
-  printBackground: true,
-  freezeFixed: true,
-  margins: 'none',
-  stamp: true,
-  stampPosition: 'footer',
-  stampDate: true,
-  stampUrl: true,
-  stampTitle: false,
-  stampPages: true,
-  saveAs: false
-};
-
 const HINTS = {
-  width: 'O papel recebe a largura exata do site, então nada é reorganizado.',
+  width: 'A largura do papel acompanha a página para reduzir mudanças no layout.',
   single: 'Uma única página, do topo ao rodapé, sem quebras. Ruim para imprimir.',
   a4: 'Cabe numa folha real, mas sites responsivos podem virar layout estreito.'
 };
@@ -62,24 +46,32 @@ chrome.runtime.onMessage.addListener((msg) => {
   if (msg && msg.type === 'pdf-fiel-status') setStatus(msg.text, msg.kind);
 });
 
-document.addEventListener('change', save);
+document.addEventListener('change', () => {
+  save().catch((error) => setStatus('Não foi possível salvar as opções: ' + error.message, 'error'));
+});
 el('scale').addEventListener('input', refresh);
 
 el('go').addEventListener('click', async () => {
-  await save();
   el('go').disabled = true;
   setStatus('Preparando...');
   try {
+    await save();
     const res = await chrome.runtime.sendMessage({ type: 'pdf-fiel-capture' });
-    if (res && !res.ok) setStatus('Erro: ' + res.error, 'error');
+    if (!res) throw new Error('O serviço de captura não respondeu. Recarregue a extensão e tente novamente.');
+    if (!res.ok) setStatus('Erro: ' + res.error, 'error');
   } catch (e) {
-    // O popup pode fechar antes da resposta; o carimbo de status já cobre isso.
+    setStatus('Erro: ' + e.message, 'error');
   } finally {
     el('go').disabled = false;
   }
 });
 
 (async () => {
-  const stored = await chrome.storage.sync.get('settings');
-  applyForm(Object.assign({}, DEFAULTS, stored.settings || {}));
+  try {
+    const stored = await chrome.storage.sync.get('settings');
+    applyForm(PdfFielSettings.normalize(stored.settings));
+    el('go').disabled = false;
+  } catch (error) {
+    setStatus('Não foi possível carregar as opções: ' + error.message, 'error');
+  }
 })();
