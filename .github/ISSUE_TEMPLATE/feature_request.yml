@@ -1,0 +1,15 @@
+name: Sugerir melhoria / Feature request
+description: Proponha uma melhoria para a extensão ou documentação.
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: Qual problema deseja resolver? / What problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Sugestão e alternativas / Proposal and alternatives
+    validations:
+      required: true

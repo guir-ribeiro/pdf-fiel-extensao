@@ -10,21 +10,7 @@
  *    layout mobile).
  */
 
-const DEFAULTS = {
-  layout: 'width',          // 'width' | 'a4' | 'single'
-  orientation: 'portrait',
-  scale: 1,
-  printBackground: true,
-  freezeFixed: true,
-  margins: 'none',          // 'none' | 'small' | 'normal'
-  stamp: true,
-  stampPosition: 'footer',  // 'footer' | 'header'
-  stampDate: true,
-  stampUrl: true,
-  stampTitle: false,
-  stampPages: true,
-  saveAs: false
-};
+importScripts('settings.js');
 
 const PX_PER_IN = 96;
 const MAX_PAPER_IN = 195;   // limite prático de uma página PDF (200in)
@@ -98,13 +84,15 @@ function bytesToBase64(bytes) {
 
 async function getSettings() {
   const stored = await chrome.storage.sync.get('settings');
-  return Object.assign({}, DEFAULTS, stored.settings || {});
+  return PdfFielSettings.normalize(stored.settings);
 }
 
 /* ------------------------------------------------- preparo da página */
 
 /* Roda dentro da aba (mundo isolado). Precisa ser autocontida. */
 async function preparePage(freezeFixed) {
+  // Recupera uma preparação anterior interrompida, se ainda existir nesta aba.
+  if (window.__pdfFielRestore) window.__pdfFielRestore();
   const doc = document;
   const de = doc.documentElement;
   const nap = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -116,14 +104,47 @@ async function preparePage(freezeFixed) {
 
   const prevX = window.scrollX;
   const prevY = window.scrollY;
-  const prevScrollBehavior = de.style.scrollBehavior;
-  de.style.scrollBehavior = 'auto';
+  const touched = [];
+  const attributes = [];
+  const seen = new Set();
+  const remember = (el) => {
+    if (seen.has(el)) return;
+    seen.add(el);
+    touched.push([el, el.getAttribute('style')]);
+  };
+  const rememberAttribute = (el, name) => {
+    attributes.push([el, name, el.getAttribute(name)]);
+  };
+
+  // Registra a restauração ANTES de qualquer alteração: vale também se o preparo falhar.
+  window.__pdfFielRestore = function () {
+    touched.forEach(([el, prev]) => {
+      if (el === de) return;
+      if (prev === null) el.removeAttribute('style');
+      else el.setAttribute('style', prev);
+    });
+    attributes.forEach(([el, name, prev]) => {
+      if (prev === null) el.removeAttribute(name);
+      else el.setAttribute(name, prev);
+    });
+    // Evita que scroll-behavior: smooth anime a volta à posição original.
+    de.style.setProperty('scroll-behavior', 'auto', 'important');
+    window.scrollTo(prevX, prevY);
+    const rootStyle = touched.find(([el]) => el === de)[1];
+    if (rootStyle === null) de.removeAttribute('style');
+    else de.setAttribute('style', rootStyle);
+    delete window.__pdfFielRestore;
+  };
+  remember(de);
+  de.style.setProperty('scroll-behavior', 'auto', 'important');
 
   // 1. tira o "lazy" das mídias, para que nada saia em branco no PDF
   doc.querySelectorAll('img[loading="lazy"], iframe[loading="lazy"]').forEach((el) => {
+    rememberAttribute(el, 'loading');
     try { el.loading = 'eager'; } catch (e) { /* ignora */ }
   });
   doc.querySelectorAll('img[decoding="async"]').forEach((el) => {
+    rememberAttribute(el, 'decoding');
     try { el.decoding = 'sync'; } catch (e) { /* ignora */ }
   });
 
@@ -149,13 +170,24 @@ async function preparePage(freezeFixed) {
   try { await Promise.race([doc.fonts.ready, nap(4000)]); } catch (e) { /* ignora */ }
   const pending = Array.prototype.filter.call(doc.images, (img) => !img.complete);
   if (pending.length) {
-    await Promise.race([
-      Promise.all(pending.map((img) => new Promise((r) => {
-        img.addEventListener('load', r, { once: true });
-        img.addEventListener('error', r, { once: true });
-      }))),
-      nap(6000)
-    ]);
+    const listeners = [];
+    try {
+      await Promise.race([
+        Promise.all(pending.map((img) => new Promise((resolve) => {
+          const done = () => resolve();
+          listeners.push([img, done]);
+          img.addEventListener('load', done, { once: true });
+          img.addEventListener('error', done, { once: true });
+          if (img.complete) resolve();
+        }))),
+        nap(6000)
+      ]);
+    } finally {
+      listeners.forEach(([img, done]) => {
+        img.removeEventListener('load', done);
+        img.removeEventListener('error', done);
+      });
+    }
   }
   await nap(150);
 
@@ -171,14 +203,6 @@ async function preparePage(freezeFixed) {
   //    b) position:fixed vira absolute na posição em que o elemento aparece no
   //       topo da página. Sem isso, barras fixas se repetem (ou tapam
   //       conteúdo) em toda página do PDF.
-  const touched = [];
-  const seen = new Set();
-  const remember = (el) => {
-    if (seen.has(el)) return;
-    seen.add(el);
-    touched.push([el, el.getAttribute('style')]);
-  };
-
   const all = doc.querySelectorAll('body *');
   const cap = Math.min(all.length, 12000);
   for (let i = 0; i < cap; i++) {
@@ -205,15 +229,6 @@ async function preparePage(freezeFixed) {
       el.style.setProperty('width', r.width + 'px', 'important');
     }
   }
-
-  window.__pdfFielRestore = function () {
-    touched.forEach(([el, prev]) => {
-      if (prev === null) el.removeAttribute('style');
-      else el.setAttribute('style', prev);
-    });
-    de.style.scrollBehavior = prevScrollBehavior;
-    window.scrollTo(prevX, prevY);
-  };
 
   return {
     width: Math.max(de.scrollWidth, doc.body ? doc.body.scrollWidth : 0, de.clientWidth),
@@ -272,7 +287,8 @@ function buildStampTemplate(settings, info, stampText, k, stampWidthIn) {
 function nowStamp() {
   try {
     return new Intl.DateTimeFormat('pt-BR', {
-      dateStyle: 'short', timeStyle: 'medium', timeZoneName: 'short'
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short'
     }).format(new Date());
   } catch (e) {
     return new Date().toLocaleString('pt-BR');
@@ -284,12 +300,14 @@ function safeFilename(title) {
   const pad = (n) => String(n).padStart(2, '0');
   const stamp = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate())
     + ' ' + pad(now.getHours()) + 'h' + pad(now.getMinutes());
-  let name = (title || 'pagina')
-    .replace(/[\\/:*?"<>|]/g, ' ')
+  let name = String(title || 'pagina')
+    .replace(/[\\/:*?"<>|\u0000-\u001f\u007f]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
-    .slice(0, 90);
+    .slice(0, 90)
+    .replace(/^[. ]+|[. ]+$/g, '');
   if (!name) name = 'pagina';
+  if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:[. ]|$)/i.test(name)) name = 'pagina-' + name;
   return name + ' - ' + stamp + '.pdf';
 }
 
@@ -298,18 +316,21 @@ function safeFilename(title) {
 async function readPdfStream(target, handle) {
   const chunks = [];
   let total = 0;
-  for (;;) {
-    const res = await dbg(target, 'IO.read', { handle, size: 1024 * 1024 });
-    if (res.data) {
-      const bytes = res.base64Encoded === false
-        ? new TextEncoder().encode(res.data)
-        : base64ToBytes(res.data);
-      chunks.push(bytes);
-      total += bytes.length;
+  try {
+    for (;;) {
+      const res = await dbg(target, 'IO.read', { handle, size: 1024 * 1024 });
+      if (res.data) {
+        const bytes = res.base64Encoded
+          ? base64ToBytes(res.data)
+          : new TextEncoder().encode(res.data);
+        chunks.push(bytes);
+        total += bytes.length;
+      }
+      if (res.eof) break;
     }
-    if (res.eof) break;
+  } finally {
+    await dbg(target, 'IO.close', { handle }).catch(() => {});
   }
-  await dbg(target, 'IO.close', { handle }).catch(() => {});
   const out = new Uint8Array(total);
   let offset = 0;
   for (const c of chunks) { out.set(c, offset); offset += c.length; }
@@ -322,6 +343,7 @@ async function printToPdf(target, params) {
     return await dbg(target, 'Page.printToPDF',
       Object.assign({}, params, { generateTaggedPDF: true, generateDocumentOutline: true }));
   } catch (e) {
+    if (!/invalid parameters|unknown parameter|unrecognized|not supported/i.test(e.message)) throw e;
     return await dbg(target, 'Page.printToPDF', params);
   }
 }
@@ -336,7 +358,8 @@ async function capture(tabId, settings) {
 
   const target = { tabId };
   let attached = false;
-  let prepared = false;
+  let preparationStarted = false;
+  let output;
 
   try {
     say('Conectando ao motor de impressão...');
@@ -353,6 +376,7 @@ async function capture(tabId, settings) {
     await dbg(target, 'Page.enable').catch(() => {});
 
     say('Carregando a página inteira...');
+    preparationStarted = true;
     const injected = await chrome.scripting.executeScript({
       target: { tabId },
       func: preparePage,
@@ -360,7 +384,6 @@ async function capture(tabId, settings) {
     });
     const info = injected && injected[0] && injected[0].result;
     if (!info) throw new Error('Não consegui ler o conteúdo desta aba.');
-    prepared = true;
 
     // mídia "screen" em vez de "print": é o que torna o PDF igual à tela
     await dbg(target, 'Emulation.setEmulatedMedia', {
@@ -372,7 +395,7 @@ async function capture(tabId, settings) {
 
     say('Gerando o PDF...');
 
-    const scale = Math.min(2, Math.max(0.1, Number(settings.scale) || 1));
+    const scale = settings.scale;
     const base = MARGIN_IN[settings.margins] != null ? MARGIN_IN[settings.margins] : 0;
     const marginLeft = base, marginRight = base;
 
@@ -445,28 +468,35 @@ async function capture(tabId, settings) {
     const bytes = res.stream ? await readPdfStream(target, res.stream) : base64ToBytes(res.data);
     if (!bytes || bytes.length < 100) throw new Error('O PDF saiu vazio.');
 
-    await dbg(target, 'Emulation.setEmulatedMedia', { media: '' }).catch(() => {});
-
-    say('Salvando...');
-    const filename = safeFilename(info.title);
-    await download(bytes, filename, !!settings.saveAs);
-
-    return { filename, size: Math.round(bytes.length / 1024), note };
+    output = { bytes, filename: safeFilename(info.title), note };
   } finally {
-    if (prepared) {
-      chrome.scripting.executeScript({ target: { tabId }, func: restorePage }).catch(() => {});
+    if (attached) {
+      await dbg(target, 'Emulation.setEmulatedMedia', { media: '', features: [] }).catch(() => {});
+    }
+    if (preparationStarted) {
+      await chrome.scripting.executeScript({ target: { tabId }, func: restorePage }).catch(() => {});
     }
     if (attached) await detach(target);
   }
+
+  // A página já foi restaurada e o depurador desligado antes do diálogo Salvar como.
+  say('Iniciando o download...');
+  await download(output.bytes, output.filename, !!settings.saveAs);
+  return { filename: output.filename, size: Math.round(output.bytes.length / 1024), note: output.note };
 }
 
 /* --------------------------------------------------------- download */
 
+async function hasOffscreenDocument() {
+  const contexts = await chrome.runtime.getContexts({
+    contextTypes: ['OFFSCREEN_DOCUMENT'],
+    documentUrls: [chrome.runtime.getURL('offscreen.html')]
+  });
+  return contexts.length > 0;
+}
+
 async function ensureOffscreen() {
-  if (chrome.offscreen.hasDocument) {
-    const has = await chrome.offscreen.hasDocument();
-    if (has) return;
-  }
+  if (await hasOffscreenDocument()) return;
   try {
     await chrome.offscreen.createDocument({
       url: 'offscreen.html',
@@ -484,26 +514,37 @@ async function download(bytes, filename, saveAs) {
     type: 'pdf-fiel-blob',
     base64: bytesToBase64(bytes)
   });
-  if (!reply || !reply.url) throw new Error('Falha ao preparar o arquivo para download.');
+  if (!reply || !reply.url) {
+    throw new Error(reply?.error || 'Falha ao preparar o arquivo para download.');
+  }
 
-  const downloadId = await chrome.downloads.download({
-    url: reply.url,
-    filename,
-    saveAs: !!saveAs
-  });
+  try {
+    await chrome.downloads.download({ url: reply.url, filename, saveAs: !!saveAs });
+  } catch (e) {
+    // Inclui o cancelamento do diálogo: não deixa o PDF retido na memória.
+    await chrome.runtime.sendMessage({ type: 'pdf-fiel-revoke', url: reply.url }).catch(() => {});
+    throw e;
+  }
+}
 
-  let done = false;
-  const cleanup = (delta) => {
-    if (done) return;
-    if (delta.id !== downloadId || !delta.state) return;
-    if (delta.state.current === 'in_progress') return;
-    done = true;
-    chrome.downloads.onChanged.removeListener(cleanup);
-    chrome.runtime.sendMessage({ type: 'pdf-fiel-revoke', url: reply.url }).catch(() => {});
-    setTimeout(() => chrome.offscreen.closeDocument().catch(() => {}), 500);
-  };
-  chrome.downloads.onChanged.addListener(cleanup);
-  setTimeout(() => cleanup({ id: downloadId, state: { current: 'complete' } }), 30000);
+// Registrado no topo para funcionar também quando o Chrome reativa o worker.
+// Cada download tem sua própria URL; um download não encerra o documento de outro.
+chrome.downloads.onChanged.addListener((delta) => {
+  if (!delta.state || !['complete', 'interrupted'].includes(delta.state.current)) return;
+  releaseDownload(delta).catch(() => {});
+});
+
+async function releaseDownload(delta) {
+  const [item] = await chrome.downloads.search({ id: delta.id });
+  if (!item || item.byExtensionId !== chrome.runtime.id
+      || !item.url?.startsWith('blob:' + chrome.runtime.getURL(''))) return;
+  if (await hasOffscreenDocument()) {
+    await chrome.runtime.sendMessage({ type: 'pdf-fiel-revoke', url: item.url }).catch(() => {});
+  }
+  if (delta.state.current === 'interrupted') {
+    say('O download foi interrompido. Tente capturar a página novamente.', 'error');
+    badge('!', '#b3261e');
+  }
 }
 
 /* ------------------------------------------------------------ fluxo */
@@ -517,7 +558,7 @@ async function run(tabId) {
   try {
     const settings = await getSettings();
     const result = await capture(tabId, settings);
-    say('PDF salvo: ' + result.filename + ' (' + result.size + ' KB)' + result.note, 'ok');
+    say('Download iniciado: ' + result.filename + ' (' + result.size + ' KB)' + result.note, 'ok');
     badge('OK');
     return { ok: true, result };
   } catch (e) {
@@ -536,7 +577,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab) { sendResponse({ ok: false, error: 'Nenhuma aba ativa.' }); return; }
     sendResponse(await run(tab.id));
-  })();
+  })().catch((error) => sendResponse({ ok: false, error: error.message }));
   return true;
 });
 

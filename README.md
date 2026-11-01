@@ -1,106 +1,176 @@
-# PDF Fiel — página inteira
+# PDF Fiel
 
-Extensão do Chrome (Manifest V3) que baixa a página aberta em PDF, o mais
-parecido possível com o que aparece na tela.
+**Salve páginas da web em PDF preservando o layout da tela.**
 
+Extensão open source para Google Chrome, com texto selecionável, cores,
+links e carimbo opcional de data, hora e URL. Sem conta, sem servidor e sem
+dependências de execução.
 
-## Privacidade e segurança
+[English](README.en.md) · [Privacidade](PRIVACY.md) ·
+[Como contribuir](CONTRIBUTING.md) · [Licença MIT](LICENSE)
 
-- **Não faz nenhuma chamada de rede.** Não existe `fetch`, `XMLHttpRequest`
-  nem `WebSocket` em nenhum arquivo — nada do que você captura sai do seu
-  computador.
-- **Não coleta dados.** As únicas informações salvas são as suas próprias
-  preferências de captura (formato, margens, carimbo), guardadas localmente
-  via `chrome.storage.sync` — sincronizadas pela sua própria Conta Google,
-  como qualquer configuração de extensão, e nunca enviadas a mim.
-- **Código 100% legível**, sem minificação nem ofuscação — todo o
-  `background.js`, `popup.js` e `offscreen.js` está aqui, dá pra ler linha a
-  linha antes de instalar.
-- A permissão mais chamativa é `debugger`: é ela quem faz o Chrome mostrar a
-  barra *"está depurando este navegador"* durante a captura. Não tem como
-  evitar — é a única API que dá acesso ao motor de impressão do Chrome, e é
-  usada só no instante do clique (ou atalho), nunca em segundo plano.
+## Recursos
 
-## Instalar
+- Captura conteúdo além da área visível usando o motor de impressão do Chrome.
+- Preserva texto e vetores quando o conteúdo original permite.
+- Emula CSS de tela para reduzir alterações causadas por `@media print`.
+- Oferece largura real, folha contínua e A4, além de margens e escala.
+- Percorre a página para carregar imagens sob demanda, com limites de espera.
+- Pode fixar barras flutuantes para evitar que se repitam no PDF.
+- Inclui data e hora com fuso, URL, título e numeração no cabeçalho ou rodapé.
+- Captura pelo popup ou por **Ctrl + Shift + Y** (**⌘ + Shift + Y** no macOS).
 
-1. Abra `chrome://extensions`
-2. Ligue o **Modo do desenvolvedor** (canto superior direito)
-3. Clique em **Carregar sem compactação** e escolha esta pasta
-4. Fixe o ícone na barra (opcional) e use `Cmd/Ctrl + Shift + Y` para capturar
-   direto, sem abrir o popup
+## Instalação
 
-## Como ela consegue ser fiel
+Requer **Google Chrome 116 ou superior** em um computador. A extensão usa
+Manifest V3 e é instalada manualmente a partir deste repositório.
 
-Em vez de tirar um print da tela e colar num PDF, ela chama o **próprio motor de
-impressão do Chrome** (`Page.printToPDF`, via a API `chrome.debugger`). O
-resultado é um PDF de verdade: texto selecionável e pesquisável, vetores,
-links.
+1. No GitHub, clique em **Code → Download ZIP** e extraia o arquivo.
+   Se preferir Git:
 
-Quatro cuidados fazem a diferença em relação ao "Imprimir → Salvar em PDF"
-padrão do navegador:
+   ```sh
+   git clone https://github.com/guir-ribeiro/pdf-fiel-extensao.git
+   ```
 
-| Problema do print normal | O que a extensão faz |
+2. Abra `chrome://extensions` no Chrome.
+3. Ative o **Modo do desenvolvedor**.
+4. Clique em **Carregar sem compactação** e selecione a pasta extraída que
+   contém `manifest.json`.
+5. Fixe **PDF Fiel** na barra de extensões, se desejar.
+
+**Não é necessário instalar Node.js, executar npm ou fazer build para usar.**
+Para atualizar, substitua os arquivos ou execute `git pull`, volte a
+`chrome://extensions` e clique em **Recarregar** na extensão.
+
+## Uso
+
+1. Abra a página e expanda o conteúdo que deseja incluir.
+2. Clique no ícone da extensão e escolha as opções.
+3. Clique em **Baixar PDF** e aguarde o início do download.
+4. Confira a conclusão na lista de downloads do Chrome.
+
+A captura continua se o popup fechar. As últimas opções também são usadas
+pelo atalho. Configure-o em `chrome://extensions/shortcuts`, se necessário.
+Durante o preparo, a página rola automaticamente; aguarde a conclusão antes
+de continuar interagindo com ela.
+
+### Formatos e opções
+
+| Opção | Comportamento |
 | --- | --- |
-| O site aplica `@media print` e some com menus, imagens e cores | Emula a mídia **`screen`**, então valem as mesmas regras CSS da tela — e o tema claro/escuro que você está vendo é preservado |
-| O conteúdo reflui para a largura de um A4 e sites responsivos caem no layout mobile | O papel recebe a **largura real do conteúdo** (modo padrão), então nada é reorganizado |
-| Imagens com `loading="lazy"` saem em branco | Percorre a página inteira antes de imprimir para disparar o lazy-load, e espera fontes e imagens terminarem |
-| Barras `position: fixed` se repetem ou tapam conteúdo em toda página | Congela os elementos fixos na posição em que aparecem no topo |
-| Fundos com `background-clip: text` em elementos sem texto viram um bloco colorido que não existe na tela | Neutraliza o fundo desses elementos antes de imprimir |
+| **Largura real da página** — padrão | A largura da folha acompanha o conteúdo, com páginas de proporção próxima à A4. Busca reduzir a reorganização do layout. |
+| **Página única contínua** | Uma folha longa. Acima de cerca de 195 polegadas de altura calculada, usa paginação. |
+| **A4** | Retrato ou paisagem. A largura menor pode alterar o layout do site. |
+| **Margens** | Nenhuma, pequenas ou normais. O carimbo pode acrescentar espaço vertical. |
+| **Escala** | De 50% a 150%. |
+| **Cores e imagens de fundo** | Inclui os fundos ao imprimir. |
+| **Fixar barras flutuantes** | Tenta impedir a repetição de elementos `position: fixed`. |
+| **Carimbo** | Cabeçalho ou rodapé com campos selecionáveis e espaço reservado fora do conteúdo. |
+| **Perguntar onde salvar** | Abre o diálogo do Chrome para escolher o destino. |
 
-Também pede ao Chrome um PDF *tagged* com sumário a partir dos títulos, quando a
-versão do navegador suportar.
+O arquivo usa o título e a hora local da captura, por exemplo:
+`Minha página - 2026-11-01 14h30.pdf`.
 
-## Opções
+## Privacidade e permissões
 
-**Formato do papel**
+O código da extensão não envia PDFs, URLs ou conteúdo de páginas a um
+servidor, nem inclui analytics ou código remoto. Os PDFs são gerados no
+navegador e salvos no destino escolhido no Chrome.
 
-- **Largura real da página** *(padrão)* — largura idêntica à do site, paginado
-  em folhas de proporção A4. É o mais fiel.
-- **Página única contínua** — tudo numa folha só, sem quebras. Ótimo para
-  arquivar; ruim para imprimir. Acima de ~195 in de altura o PDF volta a ser
-  paginado automaticamente (limite do formato).
-- **A4** — para imprimir em papel de verdade. Aceita retrato ou paisagem.
+As preferências usam **`chrome.storage.sync`** e podem ser sincronizadas pela
+Conta Google. A rolagem de preparo pode fazer o próprio site carregar imagens
+e outros recursos pela rede. Veja os detalhes em [PRIVACY.md](PRIVACY.md).
 
-**Margens**, **escala** (50%–150%), **imprimir cores e fundos** e **fixar barras
-flutuantes** completam o controle de layout.
+| Permissão | Finalidade |
+| --- | --- |
+| `activeTab` | Acesso temporário à aba após uma ação do usuário. |
+| `scripting` | Preparar o conteúdo e restaurar as alterações temporárias. |
+| `debugger` | Chamar `Page.printToPDF` pelo Chrome DevTools Protocol. É uma permissão ampla; o código a utiliza durante a geração do PDF. |
+| `downloads` | Iniciar o download e liberar a memória do PDF quando ele termina ou é interrompido. |
+| `storage` | Salvar as preferências de captura. |
+| `offscreen` | Criar a URL de um Blob para baixar o PDF no Manifest V3. |
 
-**Carimbo de data, hora e URL** (opcional, ligado por padrão)
+O Chrome mostra um aviso de depuração durante a captura. Ele decorre do uso
+de `chrome.debugger` e desaparece quando a conexão é encerrada.
 
-Vai no rodapé ou no cabeçalho, e você escolhe o que entra: data e hora com
-fuso, URL, título da página e numeração `página/total`. Quando ligado, reserva
-uma faixa de ~1 cm **fora** da área do conteúdo, então ele nunca cobre nada da
-página.
+## Limitações e solução de problemas
 
-O nome do arquivo já sai como `Título da página - 2026-08-28 22h40.pdf`.
+- **Páginas protegidas:** não captura `chrome://`, Chrome Web Store, DevTools
+  e outras páginas reservadas pelo navegador.
+- **DevTools aberto:** pode disputar a conexão de depuração; feche-o na aba
+  e tente novamente.
+- **Rolagem infinita:** há um limite de 90 etapas; feeds e páginas muito
+  extensas podem continuar incompletos.
+- **Listas virtualizadas e painéis com rolagem própria:** conteúdo fora do
+  DOM ou dentro de áreas internas pode não ser incluído.
+- **Vídeos, canvas e iframes:** o resultado depende do motor de impressão;
+  conteúdo dinâmico, protegido ou de outros domínios pode sair incompleto.
+- **Tamanho:** a largura considerada é limitada a 5.000 pixels; páginas e
+  PDFs muito grandes podem exceder a memória ou limites do Chrome.
+- **Fidelidade:** estilos, animações, fontes e a implementação do site podem
+  causar diferenças. Compare o PDF com a página antes de usá-lo.
+- **Outros navegadores:** navegadores Chromium podem funcionar, mas não há
+  garantia. Não é uma extensão para Firefox, Safari ou navegadores móveis.
 
-## Limites conhecidos
+Se o problema persistir, [abra uma issue](https://github.com/guir-ribeiro/pdf-fiel-extensao/issues/new/choose)
+com a versão do Chrome, sistema, opções e passos para reproduzir.
+Remova informações pessoais de URLs e capturas.
 
-- Enquanto captura, o Chrome mostra a barra *"… está depurando este navegador"*.
-  É inevitável: é o preço de usar `chrome.debugger`, que é a única forma de uma
-  extensão chamar o motor de impressão. A barra some ao final.
-- Não funciona em páginas protegidas (`chrome://`, Chrome Web Store, DevTools).
-- Se o DevTools estiver aberto na aba, feche antes — só um depurador por aba.
-- Sites com rolagem infinita são percorridos até um teto de segurança, não até
-  o fim do infinito.
-- Vídeos e `<canvas>` saem no quadro em que estavam.
+## Desenvolvimento
 
-## Nota sobre `background-clip: text`
+JavaScript, HTML e CSS sem framework ou compilação. Para as verificações de
+desenvolvimento, use **Node.js 22 ou superior**:
 
-Um `background: linear-gradient(...)` combinado com `background-clip: text`
-recorta o fundo na forma das letras. Se o elemento **não tem texto nenhum**
-(por exemplo, um `<div class="logo">` que hoje só contém uma `<img>`, mas
-manteve o CSS de quando o logo era texto), na tela o gradiente é recortado
-contra nada e some — mas o motor de impressão do Chrome ignora o recorte e
-pinta o retângulo inteiro. O resultado é um bloco colorido atrás do logo, só
-no PDF.
+```sh
+npm run check
+npm test
+```
 
-A extensão detecta e neutraliza esse caso. Ainda assim, vale limpar o CSS
-morto no site: o gradiente nesses elementos não faz nada de útil.
+Não há pacotes para instalar. Os testes usam o runner nativo do Node.js e
+simulam as APIs do Chrome; a validação visual deve ser feita no navegador.
+Veja o roteiro em [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Arquivos
+Para gerar um ZIP instalável em macOS ou Linux, com o comando `zip` disponível:
 
-- `manifest.json` — permissões, atalho, ícones
-- `background.js` — todo o fluxo: prepara a página, imprime, salva
-- `popup.html` / `popup.css` / `popup.js` — as opções
-- `offscreen.html` / `offscreen.js` — só existe porque o service worker do MV3
-  não tem `URL.createObjectURL`; é ele quem cria o blob que o download usa
+```sh
+npm run package
+```
+
+O arquivo `pdf-fiel-<versão>.zip` inclui apenas os arquivos de execução e a
+licença. Extraia-o antes de usar **Carregar sem compactação**. O CI também
+gera esse pacote como artefato; não publica releases nem envia à Web Store.
+
+### Estrutura e funcionamento
+
+| Arquivo | Responsabilidade |
+| --- | --- |
+| `manifest.json` | Metadados, permissões, ícones e atalho. |
+| `background.js` | Preparação, impressão, restauração e download. |
+| `settings.js` | Valores padrão e validação das preferências. |
+| `popup.html`, `popup.css`, `popup.js` | Interface de configuração e captura. |
+| `offscreen.html`, `offscreen.js` | Conversão em Blob e liberação de URLs. |
+| `tests/`, `scripts/` | Testes de regressão, verificação e empacotamento. |
+
+O worker se conecta à aba com `chrome.debugger`, prepara imagens e fontes,
+emula mídia `screen` e chama `Page.printToPDF`. Também tenta neutralizar
+fundos com `background-clip: text` em elementos sem texto, um caso que pode
+criar retângulos coloridos na impressão.
+
+Após ler o PDF, ele remove a emulação, restaura estilos, atributos de mídia e
+rolagem e desconecta o depurador, inclusive nos caminhos de erro. Um
+documento offscreen reutilizável cria o Blob para download. A URL é revogada
+ao concluir ou interromper o download, sem encerrar downloads paralelos.
+
+Referências: [API debugger](https://developer.chrome.com/docs/extensions/reference/api/debugger),
+[API offscreen](https://developer.chrome.com/docs/extensions/reference/api/offscreen)
+e [Page.printToPDF](https://chromedevtools.github.io/devtools-protocol/tot/Page/#method-printToPDF).
+
+## Contribuições e licença
+
+Correções, melhorias de acessibilidade, documentação e relatos reproduzíveis
+são bem-vindos. Leia [CONTRIBUTING.md](CONTRIBUTING.md) e o
+[Código de Conduta](CODE_OF_CONDUCT.md). Para vulnerabilidades, use o canal
+descrito em [SECURITY.md](SECURITY.md).
+
+Distribuído sob a [licença MIT](LICENSE), copyright Guilherme Ribeiro.
+Consulte o texto da licença para os termos de uso, modificação e distribuição.

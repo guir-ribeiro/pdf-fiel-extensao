@@ -1,0 +1,19 @@
+{
+  "name": "pdf-fiel-extensao",
+  "version": "1.0.1",
+  "private": true,
+  "description": "Extensão Chrome para salvar páginas em PDF preservando o layout da tela.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/guir-ribeiro/pdf-fiel-extensao.git"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "check": "node scripts/check.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "package": "node scripts/package.mjs"
+  }
+}
